@@ -9,6 +9,10 @@ protocol FrameSource: AnyObject {
     /// Downscaled frames suitable for quality analysis, ~5 per second.
     var frames: AsyncStream<CGImage> { get }
     var captureSession: AVCaptureSession? { get }
+    /// Whether frames from this source carry a subject-framing contract.
+    /// True for the live camera (a face scan needs a face); false for
+    /// synthetic test cards, which have no subject to detect.
+    var requiresSubjectFraming: Bool { get }
     func start() async
     func stop()
 }
@@ -19,6 +23,7 @@ protocol FrameSource: AnyObject {
 @MainActor
 final class LiveCameraService: NSObject, FrameSource {
     let captureSession: AVCaptureSession?
+    let requiresSubjectFraming = true
     private let session = AVCaptureSession()
     private let sessionQueue = DispatchQueue(label: "camera.session")
     private let output = AVCaptureVideoDataOutput()
@@ -97,6 +102,7 @@ extension LiveCameraService: AVCaptureVideoDataOutputSampleBufferDelegate {
 @MainActor
 final class SimulatedCameraService: FrameSource {
     let captureSession: AVCaptureSession? = nil
+    let requiresSubjectFraming = false
     private var continuation: AsyncStream<CGImage>.Continuation?
     private var task: Task<Void, Never>?
 

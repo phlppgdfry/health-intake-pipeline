@@ -25,6 +25,10 @@ flowchart LR
 - `FrameQualityAnalyzer` is a pure function `CGImage → CaptureQuality`:
   variance-of-Laplacian for sharpness, mean luminance for exposure. Because it
   has no camera dependency it is tested directly with synthetic images.
+- `FaceFramingChecker` adds a third, independent gate for live capture: Vision
+  face detection turned into the same actionable-verdict shape (no subject /
+  too far / off-center). Sources declare via `requiresSubjectFraming` whether
+  the gate applies — the live camera does, synthetic test cards don't.
 - `ScanViewModel` auto-captures only after several consecutive usable frames —
   one lucky sharp frame is not evidence the user is holding a good shot.
 

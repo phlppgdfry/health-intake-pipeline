@@ -32,6 +32,10 @@ final class AppFlow: ObservableObject {
 
     init(consentStore: ConsentStore = ConsentStore(),
          engine: AdviceEngine? = nil) {
+        // UI tests need a deterministic starting point.
+        if ProcessInfo.processInfo.arguments.contains("--reset-state") {
+            consentStore.revoke()
+        }
         self.consentStore = consentStore
         self.engine = engine ?? AdviceEngine(
             api: MockAdviceAPI(),

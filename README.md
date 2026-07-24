@@ -14,7 +14,13 @@ demands it. Native SwiftUI, no third-party dependencies.
 **Demo flow:** consent → short intake → camera scan that only accepts a sharp,
 well-lit frame → advice that is shown **only after clinical sign-off**.
 
-<!-- demo.gif: record with `xcrun simctl io booted recordVideo` and convert -->
+<p align="center">
+  <img src="docs/media/demo.gif" width="280" alt="Demo: consent, intake, quality-gated camera scan with live guidance, auto-capture, released advice">
+</p>
+
+| Consent | Intake | Guidance | Captured | Advice |
+|---|---|---|---|---|
+| ![Consent](docs/media/01-consent.png) | ![Intake](docs/media/02-intake.png) | ![Scan guidance](docs/media/03-scan-guidance.png) | ![Scan captured](docs/media/04-scan-captured.png) | ![Advice](docs/media/05-advice.png) |
 
 ## Why these five modules
 
@@ -25,15 +31,16 @@ well-lit frame → advice that is shown **only after clinical sign-off**.
 | Offline behavior and caching | `App/Engine/OfflineQueue.swift` + `AdviceCache.swift` — persisted, deduplicated queue; encrypted, purge-safe cache |
 | Advice goes live only after clinical sign-off | `App/ClinicalGate/SignOffGate.swift` — the rule enforced by the type system, not by convention |
 | Privacy by design, consent, GDPR | `App/Consent` + [docs/privacy-by-design.md](docs/privacy-by-design.md) — versioned, revocable consent; data minimization; encryption at rest |
-| Tested, readable code + CI | `Tests/` + [`.github/workflows/ci.yml`](.github/workflows/ci.yml) — unit tests on the analyzer, engine, queue and gate run on every push |
+| Tested, readable code + CI | `Tests/` + `UITests/` + [`.github/workflows/ci.yml`](.github/workflows/ci.yml) — unit tests on the analyzer, engine, queue and gate, plus an end-to-end XCUITest of the full journey, run on every push |
 | Accessibility | applied in every view, rationale in [docs/accessibility.md](docs/accessibility.md) |
 
 ## The interesting part: quality-gated capture
 
 The camera never hands a bad frame to the pipeline. Every preview frame is
-downscaled and scored — variance-of-Laplacian for sharpness, mean luminance
-for exposure — and the user gets one actionable instruction at a time ("Hold
-the phone still", "Find more light"). Capture happens automatically only after
+downscaled and scored on three independent gates — variance-of-Laplacian for
+sharpness, mean luminance for exposure, and Vision face detection for subject
+framing — and the user gets one actionable instruction at a time ("Hold the
+phone still", "Center your face", "Find more light"). Capture happens automatically only after
 **three consecutive** usable frames: one lucky sharp frame is not evidence of
 a steady shot. The accepted image travels with its quality report, so the
 downstream pipeline can audit what it received.

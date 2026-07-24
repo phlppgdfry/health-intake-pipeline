@@ -26,10 +26,16 @@ targets:
     sources: [Tests]
     dependencies:
       - target: HealthIntake
+  HealthIntakeUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [UITests]
+    dependencies:
+      - target: HealthIntake
 schemes:
   HealthIntake:
     build:
       targets:
         HealthIntake: all
     test:
-      targets: [HealthIntakeTests]
+      targets: [HealthIntakeTests, HealthIntakeUITests]

@@ -24,6 +24,7 @@ final class ScanViewModel: ObservableObject {
 
     let source: FrameSource
     private let analyzer = FrameQualityAnalyzer()
+    private let framingChecker = FaceFramingChecker()
     private var stableCount = 0
     private var streamTask: Task<Void, Never>?
 
@@ -59,13 +60,17 @@ final class ScanViewModel: ObservableObject {
 
     private func process(_ frame: CGImage) {
         latestFrame = frame
-        let report = analyzer.analyze(frame)
+        var report = analyzer.analyze(frame)
+        if source.requiresSubjectFraming {
+            report.framing = framingChecker.check(frame)
+        }
         quality = report
 
         if report.isUsable {
             stableCount += 1
             if stableCount >= Self.requiredStableFrames {
                 capture = ScanCapture(image: frame, quality: report, capturedAt: Date())
+                CaptureFeedback.play()
                 stop()
             }
         } else {
