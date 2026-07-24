@@ -70,6 +70,7 @@ final class ScanViewModel: ObservableObject {
             stableCount += 1
             if stableCount >= Self.requiredStableFrames {
                 capture = ScanCapture(image: frame, quality: report, capturedAt: Date())
+                Log.scan.info("Auto-capture: sharpness \(Int(report.sharpness), privacy: .public), brightness \(report.brightness, format: .fixed(precision: 2), privacy: .public)")
                 CaptureFeedback.play()
                 stop()
             }

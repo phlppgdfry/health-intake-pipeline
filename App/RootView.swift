@@ -24,10 +24,12 @@ struct RootView: View {
                             flow.revokeConsent()
                         }
                         .font(.footnote)
+                        .tint(Theme.primaryDeep)
                         .accessibilityHint("Deletes your answers and capture, and returns to the consent screen")
                     }
                 }
             }
+            .toolbarBackground(Theme.canvas, for: .navigationBar)
         }
     }
 }

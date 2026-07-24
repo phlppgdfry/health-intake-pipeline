@@ -6,27 +6,40 @@ struct CameraScanView: View {
     @StateObject private var model = ScanViewModel()
 
     var body: some View {
-        VStack(spacing: 16) {
-            ZStack {
-                preview
-                    .clipShape(RoundedRectangle(cornerRadius: 16))
-                    .overlay(alignment: .bottom) { qualityBanner }
-            }
-            .aspectRatio(3 / 4, contentMode: .fit)
-            .accessibilityElement(children: .contain)
-            .accessibilityLabel("Camera preview")
+        VStack(spacing: 18) {
+            Color.clear
+                .aspectRatio(3 / 4, contentMode: .fit)
+                .overlay { preview }
+                .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 24, style: .continuous)
+                        .strokeBorder(Theme.ink.opacity(0.1))
+                )
+                .overlay {
+                    ViewfinderCorners()
+                        .stroke(model.capture == nil ? Theme.primary : .green,
+                                style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                        .padding(18)
+                        .accessibilityHidden(true)
+                }
+                .overlay(alignment: .bottom) { qualityBanner }
+                .shadow(color: Theme.ink.opacity(0.12), radius: 16, y: 6)
+                .accessibilityElement(children: .contain)
+                .accessibilityLabel("Camera preview")
 
             if let capture = model.capture {
                 capturedControls(capture)
             } else {
-                Text("The scan is taken automatically as soon as the image is sharp and well lit.")
+                Label("The scan is taken automatically as soon as the image is sharp and well lit.",
+                      systemImage: "sparkles")
                     .font(.footnote)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
+                    .foregroundStyle(Theme.inkSoft)
+                    .multilineTextAlignment(.leading)
             }
             Spacer()
         }
-        .padding()
+        .padding(20)
+        .themedScreen()
         .navigationTitle("Scan")
         .navigationBarTitleDisplayMode(.inline)
         .task { await model.start() }
@@ -57,32 +70,51 @@ struct CameraScanView: View {
             Label(quality.guidance ?? "Hold it right there…",
                   systemImage: quality.isUsable ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
                 .font(.callout.weight(.semibold))
-                .padding(.horizontal, 14)
-                .padding(.vertical, 8)
-                .background(.thinMaterial, in: Capsule())
-                .padding(.bottom, 12)
+                .foregroundStyle(.white)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .background(quality.isUsable ? Color.green.opacity(0.9) : Theme.ink.opacity(0.82),
+                            in: Capsule())
+                .padding(.bottom, 16)
                 .accessibilityAddTraits(.updatesFrequently)
+                .animation(.easeInOut(duration: 0.2), value: quality.guidance)
         }
     }
 
     private func capturedControls(_ capture: ScanCapture) -> some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 14) {
             Label("Scan captured — sharpness \(Int(capture.quality.sharpness)), lighting OK",
                   systemImage: "checkmark.seal.fill")
-                .font(.callout)
+                .font(.callout.weight(.semibold))
                 .foregroundStyle(.green)
 
-            HStack {
+            HStack(spacing: 12) {
                 Button("Retake") { model.retake() }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(SecondaryButtonStyle())
                 Button("Use this scan") {
                     flow.capture = capture
                     flow.step = .advice
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(PrimaryButtonStyle())
             }
-            .controlSize(.large)
         }
+    }
+}
+
+/// Four corner brackets that read instantly as "viewfinder".
+struct ViewfinderCorners: Shape {
+    func path(in rect: CGRect) -> Path {
+        let arm = min(rect.width, rect.height) * 0.12
+        var path = Path()
+        for (x, y, dx, dy) in [
+            (rect.minX, rect.minY, 1.0, 1.0), (rect.maxX, rect.minY, -1.0, 1.0),
+            (rect.minX, rect.maxY, 1.0, -1.0), (rect.maxX, rect.maxY, -1.0, -1.0),
+        ] {
+            path.move(to: CGPoint(x: x + dx * arm, y: y))
+            path.addLine(to: CGPoint(x: x, y: y))
+            path.addLine(to: CGPoint(x: x, y: y + dy * arm))
+        }
+        return path
     }
 }
 

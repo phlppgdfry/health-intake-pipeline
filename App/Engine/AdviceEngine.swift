@@ -30,18 +30,22 @@ final class AdviceEngine {
 
     func advice(for request: AdviceRequest) async -> Outcome {
         if let cached = cache.response(for: request) {
+            Log.engine.info("Advice served from cache")
             return .advice(cached)
         }
         guard isOnline() else {
             queue.enqueue(request)
+            Log.engine.info("Offline — request queued (\(self.queue.pending.count, privacy: .public) pending)")
             return .queuedOffline
         }
         do {
             let response = try await api.requestAdvice(request)
             cache.store(response, for: request)
+            Log.engine.info("Advice fetched and cached")
             return .advice(response)
         } catch {
             queue.enqueue(request)
+            Log.engine.error("Request failed after retries — queued: \(error, privacy: .public)")
             return .queuedOffline
         }
     }

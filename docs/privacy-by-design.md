@@ -27,6 +27,22 @@ rules a production health app must, even though the data here is mock.
 - Nothing is written to `UserDefaults` except the consent version (an integer,
   not health data).
 
+## Permissions: exactly one, and no ATT
+
+- The only system permission is the camera, requested at the moment of first
+  use (not at launch) with a purpose string that says what the scan is for.
+- There is deliberately **no App Tracking Transparency prompt**: ATT is only
+  required when data is used to track users across apps for advertising.
+  This app tracks nothing, so the honest implementation is no ATT — adding
+  the prompt would itself be a signal something is wrong.
+
+## Monitoring without leaking
+
+`os.Logger` (see `Engine/Logging.swift`) records events and scalar metrics —
+"auto-capture fired, sharpness 26000" — never content. Dynamic values are
+`.private` unless provably impersonal, so intake answers can never end up in
+a sysdiagnose.
+
 ## Nothing leaves the device
 
 In this demo the "API" is an in-process mock; no network request carries user

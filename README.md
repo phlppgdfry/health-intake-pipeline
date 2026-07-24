@@ -1,8 +1,17 @@
-# Health Intake Pipeline
+<p align="center">
+  <img src="docs/media/appicon.png" width="96" alt="Health Intake Pipeline app icon" style="border-radius: 22px">
+</p>
 
-![CI](https://github.com/KippieG/health-intake-pipeline/actions/workflows/ci.yml/badge.svg)
-![Platform](https://img.shields.io/badge/platform-iOS%2017%2B-blue)
-![Swift](https://img.shields.io/badge/Swift-SwiftUI-orange)
+<h1 align="center">Health Intake Pipeline</h1>
+
+<p align="center">
+  <a href="https://github.com/KippieG/health-intake-pipeline/actions/workflows/ci.yml"><img src="https://github.com/KippieG/health-intake-pipeline/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <img src="https://img.shields.io/badge/platform-iOS%2017%2B-FF6900" alt="Platform iOS 17+">
+  <img src="https://img.shields.io/badge/Swift-SwiftUI-FF6900" alt="SwiftUI">
+  <img src="https://img.shields.io/badge/dependencies-zero-3F2021" alt="Zero dependencies">
+  <img src="https://img.shields.io/badge/tests-unit%20%2B%20UI-3F2021" alt="Unit and UI tests">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-lightgrey" alt="MIT license"></a>
+</p>
 
 A case-study iOS app: a health intake flow that turns an **anamnesis + camera
 scan into personal advice** — built the way a regulated digital-health product
@@ -31,7 +40,7 @@ well-lit frame → advice that is shown **only after clinical sign-off**.
 | Offline behavior and caching | `App/Engine/OfflineQueue.swift` + `AdviceCache.swift` — persisted, deduplicated queue; encrypted, purge-safe cache |
 | Advice goes live only after clinical sign-off | `App/ClinicalGate/SignOffGate.swift` — the rule enforced by the type system, not by convention |
 | Privacy by design, consent, GDPR | `App/Consent` + [docs/privacy-by-design.md](docs/privacy-by-design.md) — versioned, revocable consent; data minimization; encryption at rest |
-| Tested, readable code + CI | `Tests/` + `UITests/` + [`.github/workflows/ci.yml`](.github/workflows/ci.yml) — unit tests on the analyzer, engine, queue and gate, plus an end-to-end XCUITest of the full journey, run on every push |
+| Tested, readable code + CI + monitoring | `Tests/` + `UITests/` + [`.github/workflows/ci.yml`](.github/workflows/ci.yml) — unit tests on the analyzer, engine, queue and gate, plus an end-to-end XCUITest of the full journey, on every push; privacy-redacted `os.Logger` events (`Engine/Logging.swift`) as the monitoring foundation |
 | Accessibility | applied in every view, rationale in [docs/accessibility.md](docs/accessibility.md) |
 
 ## The interesting part: quality-gated capture
