@@ -5,7 +5,7 @@
 <h1 align="center">Health Intake Pipeline</h1>
 
 <p align="center">
-  <a href="https://github.com/KippieG/health-intake-pipeline/actions/workflows/ci.yml"><img src="https://github.com/KippieG/health-intake-pipeline/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/phlppgdfry/health-intake-pipeline/actions/workflows/ci.yml"><img src="https://github.com/phlppgdfry/health-intake-pipeline/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <img src="https://img.shields.io/badge/platform-iOS%2017%2B-FF6900" alt="Platform iOS 17+">
   <img src="https://img.shields.io/badge/Swift-SwiftUI-FF6900" alt="SwiftUI">
   <img src="https://img.shields.io/badge/dependencies-zero-3F2021" alt="Zero dependencies">
