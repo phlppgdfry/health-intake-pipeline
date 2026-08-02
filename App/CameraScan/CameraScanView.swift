@@ -92,8 +92,7 @@ struct CameraScanView: View {
                 Button("Retake") { model.retake() }
                     .buttonStyle(SecondaryButtonStyle())
                 Button("Use this scan") {
-                    flow.capture = capture
-                    flow.step = .advice
+                    flow.advanceToAdvice(with: capture)
                 }
                 .buttonStyle(PrimaryButtonStyle())
             }

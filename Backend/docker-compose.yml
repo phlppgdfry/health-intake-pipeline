@@ -1,0 +1,35 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: healthintake
+      POSTGRES_USER: healthintake
+      POSTGRES_PASSWORD: healthintake
+    ports:
+      - "5544:5432"
+    volumes:
+      - healthintake-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U healthintake -d healthintake"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: HealthIntake.Api/Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      # Development on purpose here: it's what enables migrate-on-start and
+      # Swagger (see Program.cs). A real deployment would run migrations as
+      # a separate release step and use a Production-appropriate ApiKey.
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__HealthIntakeDb: "Host=postgres;Port=5432;Database=healthintake;Username=healthintake;Password=healthintake"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  healthintake-postgres:

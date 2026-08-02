@@ -40,7 +40,12 @@ final class AdviceEngine {
         }
         do {
             let response = try await api.requestAdvice(request)
-            cache.store(response, for: request)
+            // Only cache once approved — an unapproved response would
+            // otherwise short-circuit every future load and poll straight
+            // from a stale cache entry that can never become "released".
+            if response.clinicallyApproved {
+                cache.store(response, for: request)
+            }
             Log.engine.info("Advice fetched and cached")
             return .advice(response)
         } catch {
@@ -50,11 +55,25 @@ final class AdviceEngine {
         }
     }
 
-    /// Called when connectivity returns; delivered responses land in the cache
-    /// so the next lookup succeeds instantly.
+    /// Re-checks a submission that was withheld pending clinical review.
+    /// Returns `nil` on transient failure — the caller (`AdviceView`'s poll
+    /// loop) simply tries again on the next tick.
+    func pollForApproval(submissionID: String, request: AdviceRequest) async -> AdviceResponse? {
+        guard let response = try? await api.pollForApproval(submissionID: submissionID) else {
+            return nil
+        }
+        if response.clinicallyApproved {
+            cache.store(response, for: request)
+        }
+        return response
+    }
+
+    /// Called when connectivity returns; delivered *approved* responses land
+    /// in the cache so the next lookup succeeds instantly. A withheld
+    /// response isn't cached, for the same reason as in `advice(for:)`.
     func flushOfflineQueue() async {
         let delivered = await queue.replay(using: api.requestAdvice)
-        for (request, response) in delivered {
+        for (request, response) in delivered where response.clinicallyApproved {
             cache.store(response, for: request)
         }
     }
@@ -67,9 +86,20 @@ final class ConnectivityMonitor {
     private let monitor = NWPathMonitor()
     private var online = true
 
+    /// Fires when the path flips from unsatisfied to satisfied — fase 3's
+    /// hook for automatically flushing the offline queue on reconnect
+    /// (wired in `AppFlow.init`), instead of only retrying on the next
+    /// manual advice request.
+    var onConnectivityRestored: (() -> Void)?
+
     private init() {
         monitor.pathUpdateHandler = { [weak self] path in
-            self?.online = path.status == .satisfied
+            guard let self else { return }
+            let wasOffline = !self.online
+            self.online = path.status == .satisfied
+            if wasOffline && self.online {
+                self.onConnectivityRestored?()
+            }
         }
         monitor.start(queue: DispatchQueue(label: "connectivity"))
     }

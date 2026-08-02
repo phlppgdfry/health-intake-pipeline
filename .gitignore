@@ -9,3 +9,8 @@ xcuserdata/
 
 # macOS
 .DS_Store
+
+# .NET
+Backend/**/bin/
+Backend/**/obj/
+Backend/**/TestResults/

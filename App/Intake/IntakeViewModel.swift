@@ -23,6 +23,14 @@ final class IntakeViewModel: ObservableObject {
         answers.first { $0.questionID == question.id }?.answer
     }
 
+    /// Resumes a questionnaire from previously-recorded answers (fase 3:
+    /// `IntakeDraftStore`) — jumps to the first unanswered question rather
+    /// than replaying from the start.
+    func restore(_ answers: [IntakeAnswer]) {
+        self.answers = answers
+        index = min(answers.count, questions.count - 1)
+    }
+
     func answer(_ option: String) {
         answers.removeAll { $0.questionID == current.id }
         answers.append(IntakeAnswer(questionID: current.id, answer: option))

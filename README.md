@@ -5,11 +5,13 @@
 <h1 align="center">Health Intake Pipeline</h1>
 
 <p align="center">
-  <a href="https://github.com/phlppgdfry/health-intake-pipeline/actions/workflows/ci.yml"><img src="https://github.com/phlppgdfry/health-intake-pipeline/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/phlppgdfry/health-intake-pipeline/actions/workflows/ci.yml"><img src="https://github.com/phlppgdfry/health-intake-pipeline/actions/workflows/ci.yml/badge.svg" alt="iOS CI"></a>
+  <a href="https://github.com/phlppgdfry/health-intake-pipeline/actions/workflows/backend-ci.yml"><img src="https://github.com/phlppgdfry/health-intake-pipeline/actions/workflows/backend-ci.yml/badge.svg" alt="Backend CI"></a>
   <img src="https://img.shields.io/badge/platform-iOS%2017%2B-FF6900" alt="Platform iOS 17+">
   <img src="https://img.shields.io/badge/Swift-SwiftUI-FF6900" alt="SwiftUI">
-  <img src="https://img.shields.io/badge/dependencies-zero-3F2021" alt="Zero dependencies">
-  <img src="https://img.shields.io/badge/tests-unit%20%2B%20UI-3F2021" alt="Unit and UI tests">
+  <img src="https://img.shields.io/badge/iOS%20dependencies-zero-3F2021" alt="Zero third-party iOS dependencies">
+  <img src="https://img.shields.io/badge/backend-ASP.NET%20Core%20%2B%20PostgreSQL-3F2021" alt="ASP.NET Core + PostgreSQL backend">
+  <img src="https://img.shields.io/badge/tests-unit%20%2B%20UI%20%2B%20API-3F2021" alt="Unit, UI and API tests">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-lightgrey" alt="MIT license"></a>
 </p>
 
@@ -31,16 +33,24 @@ well-lit frame → advice that is shown **only after clinical sign-off**.
 |---|---|---|---|---|
 | ![Consent](docs/media/01-consent.png) | ![Intake](docs/media/02-intake.png) | ![Scan guidance](docs/media/03-scan-guidance.png) | ![Scan captured](docs/media/04-scan-captured.png) | ![Advice](docs/media/05-advice.png) |
 
+On the other side of that "clinical sign-off": the clinician review page
+(`Backend/`, fase 4) a submission actually waits on —
+
+<p align="center">
+  <img src="docs/media/06-clinician-review.png" width="480" alt="Clinician review page: a pending submission with its answers and scan sharpness, Approve/Reject buttons, gated by an API key">
+</p>
+
 ## Why these five modules
 
 | Requirement in a digital-health app | Where it lives here |
 |---|---|
 | Reliable camera capture that feeds a vision pipeline usable input | `App/CameraScan` — AVFoundation session + variance-of-Laplacian sharpness and exposure scoring, auto-capture only after stable quality |
-| API integration, state management, async work | `App/Engine/APIClient.swift` — async/await, retry with exponential backoff |
-| Offline behavior and caching | `App/Engine/OfflineQueue.swift` + `AdviceCache.swift` — persisted, deduplicated queue; encrypted, purge-safe cache |
-| Advice goes live only after clinical sign-off | `App/ClinicalGate/SignOffGate.swift` — the rule enforced by the type system, not by convention |
+| API integration, state management, async work | `App/Engine/RemoteAdviceAPI.swift` — async/await, retry with exponential backoff, idempotency keys, talks to the real backend in [`Backend/`](Backend/README.md) (opt-in via `API_BASE_URL`; `MockAdviceAPI` stays the CI default) |
+| Reliable offline sync | `App/Engine/OfflineQueue.swift` — persisted, deduplicated, per-item attempt tracking (a stuck item can't block the rest); auto-flushes on reconnect via `ConnectivityMonitor`; idempotency keys mean a replayed submission can never duplicate server-side. `App/Intake/IntakeDraftStore.swift` persists in-progress answers so a killed app resumes instead of restarting. |
+| Advice goes live only after clinical sign-off | `App/ClinicalGate/SignOffGate.swift` client-side **and** the backend's `IntakeSubmissionsController` server-side — content is `null` in the API response until `Approved`, reviewable via a small [clinician page](Backend/README.md#run-it) protected by an API key (`ApiKeyAuthFilter`) |
+| Defending the API boundary | `Idempotency-Key` (dedup), `[MinLength]`/`[Range]` model validation with automatic 400s, `ApiKeyAuthFilter` on the clinician-only endpoints, `/health` for orchestration probes, structured logging (Serilog) that never logs answer content — see [`Backend/README.md`](Backend/README.md#security-fase-5) |
 | Privacy by design, consent, GDPR | `App/Consent` + [docs/privacy-by-design.md](docs/privacy-by-design.md) — versioned, revocable consent; data minimization; encryption at rest |
-| Tested, readable code + CI + monitoring | `Tests/` + `UITests/` + [`.github/workflows/ci.yml`](.github/workflows/ci.yml) — unit tests on the analyzer, engine, queue and gate, plus an end-to-end XCUITest of the full journey, on every push; privacy-redacted `os.Logger` events (`Engine/Logging.swift`) as the monitoring foundation |
+| Tested, readable code + CI + monitoring | iOS: `Tests/` + `UITests/` + [`.github/workflows/ci.yml`](.github/workflows/ci.yml) — unit tests plus an end-to-end XCUITest, on every push; privacy-redacted `os.Logger` events (`Engine/Logging.swift`). Backend: `Backend/HealthIntake.Api.Tests/` + [`.github/workflows/backend-ci.yml`](.github/workflows/backend-ci.yml) — build, format check, tests against real PostgreSQL, coverage, Docker build. |
 | Accessibility | applied in every view, rationale in [docs/accessibility.md](docs/accessibility.md) |
 
 ## The interesting part: quality-gated capture
@@ -76,6 +86,12 @@ xcodebuild test -project HealthIntake.xcodeproj -scheme HealthIntake \
   -destination 'platform=iOS Simulator,name=iPhone 16' CODE_SIGNING_ALLOWED=NO
 ```
 
+By default the app talks to `MockAdviceAPI` (so the above needs nothing
+else). To run it against the real backend instead, see
+[`Backend/README.md`](Backend/README.md) — `docker compose up` there starts
+Postgres *and* the API — then enable `API_BASE_URL` in the `HealthIntake`
+scheme's environment variables.
+
 ## Design notes
 
 - [docs/architecture.md](docs/architecture.md) — state, caching and offline
@@ -87,10 +103,12 @@ xcodebuild test -project HealthIntake.xcodeproj -scheme HealthIntake \
 
 ## Deliberate scope
 
-No third-party dependencies, no backend, no half-built features. Things a
-production version adds — a real engine API, sign-off workflow tooling,
-localization, analytics with consent — are documented where they would go
-rather than mocked badly.
+No third-party iOS dependencies, no half-built features. The backend
+(`Backend/`) is real — ASP.NET Core + PostgreSQL, idempotent submissions, an
+API-key-gated clinician review flow, Docker + CI — not mocked. What a
+production version still adds on top — per-clinician identity instead of a
+shared API key, push instead of polling, localization, analytics with
+consent — is documented where it would go rather than mocked badly.
 
 ---
 

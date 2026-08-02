@@ -37,5 +37,10 @@ schemes:
     build:
       targets:
         HealthIntake: all
+    run:
+      environmentVariables:
+        - variable: API_BASE_URL
+          value: http://localhost:5241
+          isEnabled: false
     test:
       targets: [HealthIntakeTests, HealthIntakeUITests]

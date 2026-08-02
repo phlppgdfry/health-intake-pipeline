@@ -45,15 +45,20 @@ struct IntakeView: View {
         .themedScreen()
         .navigationTitle("Intake")
         .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            // Resumes a drafted intake (fase 3) — a no-op the first time
+            // through, since `flow.intakeAnswers` starts empty.
+            model.restore(flow.intakeAnswers)
+        }
     }
 
     private func optionRow(_ option: String) -> some View {
         let isSelected = model.selectedAnswer(for: model.current) == option
         return Button {
             model.answer(option)
+            flow.recordIntakeAnswers(model.answers)
             if model.isComplete {
-                flow.intakeAnswers = model.answers
-                flow.step = .scan
+                flow.advanceToScan()
             }
         } label: {
             HStack {

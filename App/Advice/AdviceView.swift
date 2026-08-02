@@ -49,9 +49,37 @@ struct AdviceView: View {
         case .queuedOffline:
             state = .queuedOffline
         case .advice(let response):
-            switch SignOffGate.evaluate(response) {
-            case .released(let advice): state = .released(advice)
-            case .withheld: state = .withheld
+            await handle(response, request: request)
+        }
+    }
+
+    private func handle(_ response: AdviceResponse, request: AdviceRequest) async {
+        switch SignOffGate.evaluate(response) {
+        case .released(let advice):
+            state = .released(advice)
+        case .withheld:
+            state = .withheld
+            // Only a real backend response carries a submissionID; the mock
+            // never reaches here withheld in the first place, so this loop
+            // is effectively a no-op unless API_BASE_URL is set.
+            if let submissionID = response.submissionID {
+                await pollUntilApproved(submissionID: submissionID, request: request)
+            }
+        }
+    }
+
+    /// Known simplification: a `Rejected` submission looks identical to
+    /// "still pending" here — the server distinguishes them, but there is no
+    /// separate UI state for "rejected" yet, so this keeps polling forever.
+    private func pollUntilApproved(submissionID: String, request: AdviceRequest) async {
+        while !Task.isCancelled {
+            try? await Task.sleep(for: .seconds(3))
+            guard let response = await flow.engine.pollForApproval(submissionID: submissionID, request: request) else {
+                continue
+            }
+            if case .released(let advice) = SignOffGate.evaluate(response) {
+                state = .released(advice)
+                return
             }
         }
     }
@@ -97,7 +125,7 @@ struct AdviceView: View {
                     }
                 }
 
-                Text("This demo generates mock advice. In a real product this screen is fed by the clinical engine and its sign-off workflow.")
+                Text("This demo's advice comes either from an on-device mock or a real backend with a clinical sign-off gate — see Backend/ in the repo.")
                     .font(.footnote)
                     .foregroundStyle(Theme.inkSoft)
                     .padding(.top, 6)

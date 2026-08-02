@@ -11,10 +11,15 @@ struct AdviceRequest: Codable, Equatable {
 }
 
 struct AdviceResponse: Codable, Equatable {
-    let summary: String
-    let recommendations: [String]
+    /// `nil` until the backend has clinically approved the submission — the
+    /// server withholds content, it isn't just hidden client-side.
+    let summary: String?
+    let recommendations: [String]?
     /// Advice may only be shown to the user once this is true — see SignOffGate.
     let clinicallyApproved: Bool
+    /// The backend submission id, used to poll for a later approval. `nil`
+    /// for `MockAdviceAPI`, which never needs polling.
+    var submissionID: String? = nil
 }
 
 enum APIError: Error, Equatable {
@@ -24,6 +29,10 @@ enum APIError: Error, Equatable {
 
 protocol AdviceAPI: Sendable {
     func requestAdvice(_ request: AdviceRequest) async throws -> AdviceResponse
+    /// Re-fetches a previously submitted request's current status. Only
+    /// meaningful once review is server-side and asynchronous — see
+    /// `RemoteAdviceAPI`.
+    func pollForApproval(submissionID: String) async throws -> AdviceResponse
 }
 
 /// Retry wrapper around any AdviceAPI: transient failures are retried with
@@ -45,6 +54,12 @@ struct RetryingAdviceAPI: AdviceAPI {
                 try await Task.sleep(for: baseDelay * (1 << attempt))
             }
         }
+    }
+
+    /// No backoff here — the caller's poll loop already provides the retry
+    /// cadence; wrapping it again would just double up the delay.
+    func pollForApproval(submissionID: String) async throws -> AdviceResponse {
+        try await wrapped.pollForApproval(submissionID: submissionID)
     }
 }
 
@@ -69,5 +84,12 @@ final class MockAdviceAPI: AdviceAPI {
             ],
             clinicallyApproved: true
         )
+    }
+
+    /// Never actually reached in practice: `requestAdvice` already returns
+    /// an approved response, so `AdviceView` never enters the withheld/poll
+    /// branch with a mock backend. Kept for protocol conformance and tests.
+    func pollForApproval(submissionID: String) async throws -> AdviceResponse {
+        try await requestAdvice(AdviceRequest(answers: [], scanSharpness: 0))
     }
 }

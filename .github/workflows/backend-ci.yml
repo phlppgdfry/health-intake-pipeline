@@ -1,0 +1,61 @@
+name: Backend CI
+
+on:
+  push:
+    branches: [main]
+    paths: [Backend/**, .github/workflows/backend-ci.yml]
+  pull_request:
+    paths: [Backend/**, .github/workflows/backend-ci.yml]
+
+jobs:
+  test:
+    name: Build, format, test (PostgreSQL)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: healthintake
+          POSTGRES_PASSWORD: healthintake
+          POSTGRES_DB: healthintake
+        ports:
+          - 5544:5432
+        options: >-
+          --health-cmd "pg_isready -U healthintake -d healthintake"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore
+        run: dotnet restore Backend/HealthIntake.Backend.slnx
+
+      - name: Build
+        run: dotnet build Backend/HealthIntake.Backend.slnx --no-restore
+
+      - name: Format check
+        run: dotnet format Backend/HealthIntake.Backend.slnx --verify-no-changes
+
+      - name: Create test database
+        run: |
+          PGPASSWORD=healthintake psql -h localhost -p 5544 -U healthintake -d healthintake \
+            -c "CREATE DATABASE healthintake_test;"
+
+      - name: Test (with coverage)
+        run: dotnet test Backend/HealthIntake.Backend.slnx --no-build --collect:"XPlat Code Coverage"
+
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage
+          path: Backend/HealthIntake.Api.Tests/TestResults/**/coverage.cobertura.xml
+
+      - name: Build Docker image
+        run: docker build -f Backend/HealthIntake.Api/Dockerfile Backend

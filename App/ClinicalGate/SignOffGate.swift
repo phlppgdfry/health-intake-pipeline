@@ -13,9 +13,9 @@ enum SignOffGate {
         let summary: String
         let recommendations: [String]
 
-        fileprivate init(_ response: AdviceResponse) {
-            summary = response.summary
-            recommendations = response.recommendations
+        fileprivate init(summary: String, recommendations: [String]) {
+            self.summary = summary
+            self.recommendations = recommendations
         }
     }
 
@@ -26,7 +26,16 @@ enum SignOffGate {
         case withheld
     }
 
+    /// Gates on `clinicallyApproved` first, not on nil-checks: even a
+    /// response that happens to carry non-nil content stays withheld unless
+    /// approved. The nil-guard below is defense in depth against an
+    /// inconsistent server response, not the primary rule.
     static func evaluate(_ response: AdviceResponse) -> Verdict {
-        response.clinicallyApproved ? .released(ReleasedAdvice(response)) : .withheld
+        guard response.clinicallyApproved,
+              let summary = response.summary,
+              let recommendations = response.recommendations else {
+            return .withheld
+        }
+        return .released(ReleasedAdvice(summary: summary, recommendations: recommendations))
     }
 }
