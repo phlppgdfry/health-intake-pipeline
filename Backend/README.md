@@ -140,6 +140,13 @@ dotnet test
   from the `healthintake` database used for manual/Swagger testing).
   Covers idempotency, input validation (400s), and the API-key boundary
   (401 without/with the wrong key, success with it).
+- `HealthEndpointTests` — `/health` is reachable without a key.
+- `ApiKeyAuthFilterTests` — a server with no `Clinician:ApiKey` configured
+  fails closed (500), via a dedicated `UnconfiguredApiKeyFactory`.
+- All test classes run serially (`AssemblyInfo.cs`,
+  `DisableTestParallelization`) — they share one physical Postgres
+  database, and running them in parallel races multiple hosts migrating
+  that same fresh database at once.
 
 ## CI (fase 5)
 
