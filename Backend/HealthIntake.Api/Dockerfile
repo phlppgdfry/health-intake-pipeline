@@ -10,4 +10,7 @@ WORKDIR /app
 COPY --from=build /app .
 ENV ASPNETCORE_URLS=http://+:8080
 EXPOSE 8080
+# Non-root: the base image ships a pre-created "app" user for exactly this
+# (APP_UID is set by the base image itself).
+USER $APP_UID
 ENTRYPOINT ["dotnet", "HealthIntake.Api.dll"]

@@ -45,8 +45,10 @@ final class AdviceEngine {
             // from a stale cache entry that can never become "released".
             if response.clinicallyApproved {
                 cache.store(response, for: request)
+                Log.engine.info("Advice fetched and cached")
+            } else {
+                Log.engine.info("Advice fetched, withheld pending review")
             }
-            Log.engine.info("Advice fetched and cached")
             return .advice(response)
         } catch {
             queue.enqueue(request)

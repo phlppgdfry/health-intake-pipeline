@@ -40,7 +40,7 @@ schemes:
     run:
       environmentVariables:
         - variable: API_BASE_URL
-          value: http://localhost:5241
+          value: http://localhost:8080
           isEnabled: false
     test:
       targets: [HealthIntakeTests, HealthIntakeUITests]

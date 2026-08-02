@@ -1,13 +1,10 @@
 using System.Text.Json.Serialization;
+using HealthIntake.Api.Auth;
 using HealthIntake.Api.Data;
 using HealthIntake.Api.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi;
 using Serilog;
-
-Log.Logger = new LoggerConfiguration()
-    .Enrich.FromLogContext()
-    .WriteTo.Console()
-    .CreateBootstrapLogger();
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,11 +12,17 @@ var builder = WebApplication.CreateBuilder(args);
 // Serilog, configurable via the "Serilog" section in appsettings — useful
 // once this needs to ship to a real log sink (e.g. Seq, Application
 // Insights) instead of plain console text.
+//
+// `preserveStaticLogger: true` deliberately avoids touching the global
+// `Log.Logger` — without it, spinning up more than one host in the same
+// process (exactly what `WebApplicationFactory`-based tests do) throws
+// "the logger is already frozen" on the second instantiation.
 builder.Host.UseSerilog((context, services, configuration) => configuration
     .ReadFrom.Configuration(context.Configuration)
     .ReadFrom.Services(services)
     .Enrich.FromLogContext()
-    .WriteTo.Console());
+    .WriteTo.Console(),
+    preserveStaticLogger: true);
 
 var connectionString = builder.Configuration.GetConnectionString("HealthIntakeDb")
     ?? throw new InvalidOperationException("Missing ConnectionStrings:HealthIntakeDb configuration.");
@@ -32,7 +35,22 @@ builder.Services.AddHealthChecks().AddDbContextCheck<HealthIntakeDbContext>();
 builder.Services.AddControllers()
     .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    // Lets Swagger's "Authorize" button set X-Api-Key once for every
+    // request — the open endpoints (Create/GetById) just ignore it.
+    options.AddSecurityDefinition(ApiKeyAuthFilter.HeaderName, new OpenApiSecurityScheme
+    {
+        Type = SecuritySchemeType.ApiKey,
+        In = ParameterLocation.Header,
+        Name = ApiKeyAuthFilter.HeaderName,
+        Description = "Required for GET /api/intake-submissions and PATCH .../review.",
+    });
+    options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+    {
+        { new OpenApiSecuritySchemeReference(ApiKeyAuthFilter.HeaderName, document), [] },
+    });
+});
 
 var app = builder.Build();
 

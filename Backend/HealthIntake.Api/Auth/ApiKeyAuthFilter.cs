@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 
@@ -29,9 +31,19 @@ public class ApiKeyAuthFilter(IConfiguration configuration) : IAuthorizationFilt
         }
 
         if (!context.HttpContext.Request.Headers.TryGetValue(HeaderName, out var providedKey)
-            || providedKey != expectedKey)
+            || !FixedTimeEquals(providedKey.ToString(), expectedKey))
         {
             context.Result = new UnauthorizedResult();
         }
+    }
+
+    /// A plain `!=` leaks how many leading characters matched through
+    /// response-time differences — cheap to avoid, so avoid it.
+    private static bool FixedTimeEquals(string provided, string expected)
+    {
+        var providedBytes = Encoding.UTF8.GetBytes(provided);
+        var expectedBytes = Encoding.UTF8.GetBytes(expected);
+        return providedBytes.Length == expectedBytes.Length
+            && CryptographicOperations.FixedTimeEquals(providedBytes, expectedBytes);
     }
 }

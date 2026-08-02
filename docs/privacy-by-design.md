@@ -10,8 +10,9 @@ rules a production health app must, even though the data here is mock.
 - Consent is **versioned**: if the consent text materially changes, the stored
   version no longer matches and every user is asked again. Old consent is
   never silently carried over to new terms.
-- Revoking (toolbar, always visible) deletes answers and captures immediately
-  and returns to the consent screen.
+- Revoking (toolbar, always visible) deletes answers and captures immediately,
+  clears the persisted intake draft (see below), and returns to the consent
+  screen.
 
 ## Data minimization
 
@@ -22,8 +23,10 @@ rules a production health app must, even though the data here is mock.
 
 ## Encryption at rest
 
-- Cached advice and the offline queue are written with
-  `.completeFileProtection`: encrypted whenever the device is locked.
+- Cached advice, the offline queue, and the persisted intake draft
+  (`IntakeDraftStore`, fase 3 — resumes a killed app mid-questionnaire) are
+  all written with `.completeFileProtection`: encrypted whenever the device
+  is locked.
 - Nothing is written to `UserDefaults` except the consent version (an integer,
   not health data).
 
@@ -43,9 +46,29 @@ rules a production health app must, even though the data here is mock.
 `.private` unless provably impersonal, so intake answers can never end up in
 a sysdiagnose.
 
-## Nothing leaves the device
+## When data does leave the device
 
-In this demo the "API" is an in-process mock; no network request carries user
-data anywhere. In a production version, this file is where you would document
-transport encryption, data residency and retention — the structure is the
-point: privacy decisions are written down next to the code that enforces them.
+By default the "API" is an in-process mock (`MockAdviceAPI`) — no network
+request carries user data anywhere, and that stays true for CI and
+`UITests`. Pointing the app at the real backend (`RemoteAdviceAPI`, opt-in
+via `API_BASE_URL`, see [`Backend/README.md`](../Backend/README.md)) does
+send the intake answers and scan sharpness over the network, so the same
+data-minimization rule applies there too: exactly the answers and one
+scalar metric, nothing else — no device identifiers, no location.
+
+What the backend adds on its side of that boundary:
+
+- **The clinical gate is server-side, not just client-side** — `summary`/
+  `recommendations` are `null` in every API response until a submission is
+  `Approved`, so there's nothing to leak even if `SignOffGate` were bypassed
+  on the client.
+- **The clinician-only endpoints require an API key** — the list of every
+  submission's answers and the review action are the two places that
+  actually expose cross-patient data; both are gated (`ApiKeyAuthFilter`).
+- **Logs never contain answers or advice text** — Serilog logs submission
+  IDs and status transitions only (`IntakeSubmissionsController`).
+- **Local dev/demo runs over plain HTTP** (`localhost`, loopback is exempt
+  from iOS's App Transport Security). A real deployment would terminate TLS
+  in front of the API and document data residency/retention here — the
+  structure of this file is the point: privacy decisions are written down
+  next to the code that enforces them, not left implicit.
