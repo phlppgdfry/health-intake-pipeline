@@ -6,6 +6,9 @@ on:
     paths: [Backend/**, .github/workflows/backend-ci.yml]
   pull_request:
     paths: [Backend/**, .github/workflows/backend-ci.yml]
+  schedule:
+    - cron: "0 6 * * 1" # weekly: new NuGet advisories fail the build early
+  workflow_dispatch:
 
 jobs:
   test:

@@ -4,6 +4,12 @@ on:
   push:
     branches: [main]
   pull_request:
+  schedule:
+    - cron: "0 6 * * 1" # weekly: catches runner-image and Xcode changes before a reviewer does
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   test:
@@ -18,12 +24,26 @@ jobs:
       - name: Generate Xcode project
         run: xcodegen generate
 
+      - name: Pick the newest available iPhone simulator
+        # Hard-coding "iPhone 16" breaks as soon as the runner image drops that device.
+        id: sim
+        run: |
+          udid=$(xcrun simctl list devices available -j | python3 -c "
+          import json, sys
+          devices = json.load(sys.stdin)['devices']
+          phones = [(rt, d) for rt, ds in devices.items() if 'iOS' in rt for d in ds if d['name'].startswith('iPhone')]
+          phones.sort(key=lambda item: item[0])
+          print(phones[-1][1]['udid'])
+          ")
+          echo "udid=$udid" >> "$GITHUB_OUTPUT"
+          xcrun simctl list devices | grep "$udid"
+
       - name: Build and test
         run: |
           set -o pipefail
           xcodebuild test \
             -project HealthIntake.xcodeproj \
             -scheme HealthIntake \
-            -destination 'platform=iOS Simulator,name=iPhone 16' \
+            -destination 'id=${{ steps.sim.outputs.udid }}' \
             CODE_SIGNING_ALLOWED=NO \
             | xcbeautify --renderer github-actions

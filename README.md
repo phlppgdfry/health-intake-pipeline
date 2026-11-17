@@ -40,6 +40,27 @@ On the other side of that "clinical sign-off": the clinician review page
   <img src="docs/media/06-clinician-review.png" width="480" alt="Clinician review page: a pending submission with its answers and scan sharpness, Approve/Reject buttons, gated by an API key">
 </p>
 
+## How a submission flows
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant P as Patient (iOS app)
+  participant Q as Offline queue
+  participant A as API (ASP.NET Core)
+  participant C as Clinician page
+  P->>P: Consent (versioned) → intake → quality-gated scan
+  P->>Q: Persist submission + Idempotency-Key
+  Q->>A: POST when online (retries, backoff)
+  A-->>Q: 201 Created (same record on a replay), advice = null
+  C->>A: Approve / reject (API key)
+  P->>A: Poll status
+  A-->>P: Advice released only after sign-off
+```
+
+A replayed submission (flaky network, app killed mid-send) carries the same idempotency key,
+so the server never stores it twice.
+
 ## Why these five modules
 
 | Requirement in a digital-health app | Where it lives here |
@@ -77,13 +98,14 @@ xcodegen generate
 open HealthIntake.xcodeproj
 ```
 
-Run the `HealthIntake` scheme. On a device you get the live camera; in the
+Run the `HealthIntake` scheme. (CI picks the newest installed iPhone simulator itself and also
+runs weekly, so a runner or Xcode change shows up before a reviewer notices.) On a device you get the live camera; in the
 simulator a synthetic frame source replays the blurry → sharp journey so every
 screen is reachable. Tests: `⌘U`, or exactly what CI runs:
 
 ```bash
 xcodebuild test -project HealthIntake.xcodeproj -scheme HealthIntake \
-  -destination 'platform=iOS Simulator,name=iPhone 16' CODE_SIGNING_ALLOWED=NO
+  -destination 'platform=iOS Simulator,name=<any installed iPhone>' CODE_SIGNING_ALLOWED=NO
 ```
 
 By default the app talks to `MockAdviceAPI` (so the above needs nothing
