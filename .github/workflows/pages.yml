@@ -2,7 +2,7 @@ name: Showcase (GitHub Pages)
 
 on:
   push:
-    branches: [showcase/pages]
+    branches: [main]
     paths: ["site/**", ".github/workflows/pages.yml"]
   workflow_dispatch:
 
