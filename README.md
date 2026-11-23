@@ -15,6 +15,12 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-lightgrey" alt="MIT license"></a>
 </p>
 
+<!-- showcase:start -->
+> **[▶ Live showcase](https://phlppgdfry.github.io/health-intake-pipeline/)** — screens, a recorded walkthrough and what is real versus simulated
+
+[![Live showcase: health-intake-pipeline](site/preview.png)](https://phlppgdfry.github.io/health-intake-pipeline/)
+<!-- showcase:end -->
+
 A case-study iOS app: a health intake flow that turns an **anamnesis + camera
 scan into personal advice** — built the way a regulated digital-health product
 demands it. Native SwiftUI, no third-party dependencies.
