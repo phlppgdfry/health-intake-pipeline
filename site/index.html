@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Health Intake Pipeline — consent, a camera that refuses bad frames, advice only after sign-off</title>
+<meta name="description" content="A case-study iOS app and real backend for digital-health intake: versioned consent, a quality-gated camera scan, offline sync with idempotent submissions and advice released only after clinical sign-off.">
+<link rel="canonical" href="https://phlppgdfry.github.io/health-intake-pipeline/">
+<meta property="og:type" content="website"><meta property="og:title" content="Health Intake Pipeline — consent, a camera that refuses bad frames, advice only after sign-off"><meta property="og:description" content="A case-study iOS app and real backend for digital-health intake: versioned consent, a quality-gated camera scan, offline sync with idempotent submissions and advice released only after clinical sign-off.">
+<meta property="og:url" content="https://phlppgdfry.github.io/health-intake-pipeline/"><meta property="og:image" content="https://phlppgdfry.github.io/health-intake-pipeline/og.jpg"><meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#0a0d12">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23ff7a1a'/%3E%3C/svg%3E">
+<link rel="preload" href="assets/space-grotesk-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/showcase.css">
+<style>:root{--brand:#ff7a1a;--accent-ink:#1c0b00}</style>
+</head>
+<body>
+<div class="top"><div class="wrap">
+  <a class="brand" href="#"><i class="dot"></i><span>Health Intake Pipeline</span></a>
+  <nav><a class="" href="#how">How it works</a><a class="hide-sm" href="#screens">Screens</a><a class="hide-sm" href="#run">Run it</a><a href="https://github.com/phlppgdfry/health-intake-pipeline" aria-label="GitHub repository">GitHub</a><button class="theme" type="button" aria-label="Toggle light or dark theme"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button></nav>
+</div></div>
+<main>
+<header class="hero"><div class="wrap grid">
+  <div>
+    <div class="kicker"><span>SwiftUI iOS 17 · ASP.NET Core · PostgreSQL</span><span class="chip status">Case study</span></div>
+    <h1>Advice goes live <em>only after a clinician says so</em>.</h1>
+    <p class="lede">A health intake flow that turns an anamnesis and a camera scan into personal advice, built the way a regulated product demands it: consent first, a capture pipeline that never hands a bad frame downstream, submissions that survive a dead network, and a sign-off gate enforced by the type system on the phone and again on the server.</p>
+    <div class="ctas"><a class="btn" href="https://github.com/phlppgdfry/health-intake-pipeline"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.53-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.84 1.19 3.1 0 4.42-2.7 5.39-5.26 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5Z"/></svg> Source on GitHub</a></div>
+    <div class="stack"><span class="chip">SwiftUI</span><span class="chip">AVFoundation</span><span class="chip">Vision</span><span class="chip">ASP.NET Core</span><span class="chip">PostgreSQL</span><span class="chip">Docker</span><span class="chip">XCUITest</span><span class="chip">xUnit</span><span class="chip">GitHub Actions</span></div>
+  </div>
+  <div class="hero-visual"><div class="phones"><div class="phone"><img src="img/docs-media-03-scan-guidance.webp" alt="Health Intake Pipeline screens: scan guidance, captured frame and released advice" loading="eager"></div><div class="phone"><img src="img/docs-media-04-scan-captured.webp" alt="Health Intake Pipeline screens: scan guidance, captured frame and released advice" loading="eager"></div><div class="phone"><img src="img/docs-media-05-advice.webp" alt="Health Intake Pipeline screens: scan guidance, captured frame and released advice" loading="eager"></div></div><div class="caption">The real app in the simulator. All medical content is mock; the engineering is real.</div></div>
+</div></header>
+<section id="why"><div class="wrap">
+  <p class="eyebrow">Why it exists</p><h2>In digital health, the boring parts are the product.</h2>
+  <div class="problem">
+    <div class="card before"><div class="label">Without it</div><p>A blurry photo feeds a model that confidently returns nonsense. A flaky network creates a duplicate record or loses one. Advice reaches a patient before anyone qualified has looked at it. Consent is a checkbox nobody can audit later.</p></div>
+    <div class="card after"><div class="label">With it</div><p>Every frame is scored on sharpness, light and framing, and capture happens only after three usable frames in a row. Submissions carry an idempotency key, so a replay never stores twice. Advice is null in the API until a clinician approves it, and consent is versioned and revocable.</p></div>
+  </div>
+</div></section>
+<section id="how"><div class="wrap">
+  <p class="eyebrow">How it works</p><h2>Five modules, each answering a real requirement</h2>
+  <p class="sub">From the camera to the clinician and back, with the checks written down.</p>
+  <div class="cards"><div class="card"><div class="ic">01</div><h3>Quality-gated capture</h3><p>Variance-of-Laplacian sharpness, luminance and Vision face framing, one instruction at a time. Auto-capture only after three consecutive good frames.</p></div><div class="card"><div class="ic">02</div><h3>Reliable offline sync</h3><p>A persisted, deduplicated queue with backoff and per-item attempts. A stuck item never blocks the rest, and a killed app resumes the draft.</p></div><div class="card"><div class="ic">03</div><h3>Sign-off as a type</h3><p>Advice content is null until Approved, enforced client-side by a type and server-side by the controller. Review runs on a small clinician page behind an API key.</p></div><div class="card"><div class="ic">04</div><h3>Privacy by design</h3><p>Versioned, revocable consent, data minimisation, encryption at rest, and logs that never contain answer content.</p></div><div class="card"><div class="ic">05</div><h3>Accessible from the start</h3><p>Headers, combined elements, hidden decoration and live camera guidance for VoiceOver, applied in every view.</p></div><div class="card"><div class="ic">06</div><h3>Tested and in CI</h3><p>Swift unit and end-to-end UI tests, plus a backend suite against real PostgreSQL, format check, coverage and a Docker build.</p></div></div>
+  <h3 style="margin:34px 0 14px">How one submission travels</h3><div class="flow" role="list"><div class="node"><div class="n">01</div><b>Consent</b><small>versioned, revocable</small></div><div class="arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div><div class="node"><div class="n">02</div><b>Intake and scan</b><small>three gates, auto-capture</small></div><div class="arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div><div class="node"><div class="n">03</div><b>Offline queue</b><small>idempotency key, retries</small></div><div class="arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div><div class="node hl"><div class="n">04</div><b>API</b><small>201, same record on replay, advice null</small></div><div class="arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div><div class="node"><div class="n">05</div><b>Clinician</b><small>approves or rejects</small></div><div class="arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div><div class="node"><div class="n">06</div><b>Patient</b><small>advice released after sign-off</small></div></div>
+</div></section>
+<section id="screens"><div class="wrap">
+  <p class="eyebrow">Screens</p><h2>What it looks like</h2>
+  <p class="sub">Simulator captures. On a device you get the live camera; in the simulator a synthetic frame source replays the blurry-to-sharp journey.</p>
+  <div class="frame" style="margin-bottom:18px"><div class="bar"><i></i><i></i><i></i><b>Recorded flow · consent, intake, scan, advice</b></div><video controls preload="metadata" playsinline poster="img/docs-media-01-consent.webp" src="img/docs-media-demo.gif"></video></div><div class="gallery phones-g"><figure data-zoom="Consent — Versioned and revocable."><div class="frame"><img src="img/docs-media-01-consent.webp" alt="Consent" width="900" height="1951" loading="lazy" decoding="async"></div><figcaption><b>Consent</b> Versioned and revocable.</figcaption></figure><figure data-zoom="Intake — A short anamnesis; drafts survive a killed app."><div class="frame"><img src="img/docs-media-02-intake.webp" alt="Intake" width="900" height="1951" loading="lazy" decoding="async"></div><figcaption><b>Intake</b> A short anamnesis; drafts survive a killed app.</figcaption></figure><figure data-zoom="Guidance — One actionable instruction at a time."><div class="frame"><img src="img/docs-media-03-scan-guidance.webp" alt="Guidance" width="900" height="1953" loading="lazy" decoding="async"></div><figcaption><b>Guidance</b> One actionable instruction at a time.</figcaption></figure><figure data-zoom="Captured — Only after three usable frames."><div class="frame"><img src="img/docs-media-04-scan-captured.webp" alt="Captured" width="900" height="1953" loading="lazy" decoding="async"></div><figcaption><b>Captured</b> Only after three usable frames.</figcaption></figure><figure data-zoom="Advice — Shown after clinical sign-off."><div class="frame"><img src="img/docs-media-05-advice.webp" alt="Advice" width="900" height="1953" loading="lazy" decoding="async"></div><figcaption><b>Advice</b> Shown after clinical sign-off.</figcaption></figure></div>
+</div></section>
+<section id="evidence"><div class="wrap">
+  <p class="eyebrow">Evidence</p><h2>What is real, and what is not</h2>
+  
+  <div class="metrics"><div class="metric"><div class="v">35</div><div class="l">Swift tests</div><div class="s">unit tests plus an end-to-end XCUITest, run on every push</div></div><div class="metric"><div class="v">18</div><div class="l">backend tests</div><div class="s">against real PostgreSQL in CI, with a Docker build</div></div><div class="metric"><div class="v">0</div><div class="l">third-party iOS dependencies</div><div class="s">platform frameworks only</div></div></div>
+  <div class="honest" style="margin-top:18px">
+      <div class="card real"><h3><span class="pill ok">REAL</span> Built and verified</h3><ul><li>The backend is real: ASP.NET Core and PostgreSQL, idempotent submissions, API-key-gated clinician review, Docker and CI</li><li>The capture analyser is a pure function, tested with synthetic sharp and blurred frames</li><li>iOS and backend run in separate CI workflows, weekly as well, so a toolchain change shows up early</li></ul></div>
+      <div class="card sim"><h3><span class="pill warn">SIMULATED</span> Mocked or not built yet</h3><ul><li>All medical content and advice text is mock; nothing here is clinical guidance</li><li>A shared API key stands in for per-clinician identity; push instead of polling, localisation and analytics are documented but not built</li><li>The default app talks to a mock API so CI needs nothing else; the real backend is opt-in through API_BASE_URL</li></ul></div></div>
+</div></section>
+<section id="run"><div class="wrap two">
+  <div><p class="eyebrow">Run it yourself</p><h2>Run it locally</h2>
+  
+  <div class="code"><button class="copy" type="button">Copy</button><pre><code>brew install xcodegen   # once
+xcodegen generate
+open HealthIntake.xcodeproj    # run the HealthIntake scheme
+
+<span class="c"># the real backend (Postgres + API)</span>
+cd Backend &amp;&amp; docker compose up</code></pre></div></div>
+  <div><p class="eyebrow">Go deeper</p><h2>Read the source</h2>
+  <div class="links"><a href="https://github.com/phlppgdfry/health-intake-pipeline"><span>Repository</span><span>github</span></a><a href="https://github.com/phlppgdfry/health-intake-pipeline/blob/HEAD/README.md"><span>README</span><span>md</span></a><a href="https://github.com/phlppgdfry/health-intake-pipeline/blob/HEAD/docs/architecture.md"><span>Architecture notes</span><span>md</span></a><a href="https://github.com/phlppgdfry/health-intake-pipeline/blob/HEAD/docs/privacy-by-design.md"><span>Privacy by design</span><span>md</span></a><a href="https://github.com/phlppgdfry/health-intake-pipeline/blob/HEAD/docs/accessibility.md"><span>Accessibility</span><span>md</span></a><a href="https://github.com/phlppgdfry/health-intake-pipeline/blob/HEAD/Backend/README.md"><span>Backend README</span><span>md</span></a></div></div>
+</div></section></main>
+<footer><div class="wrap">
+  <span>Health Intake Pipeline · A portfolio project by Philippe Godfroy</span>
+  <span><a href="https://www.philippegodfroy.com/work">More projects</a> · <a href="https://github.com/phlppgdfry/health-intake-pipeline">Source</a></span>
+</div></footer>
+<script src="assets/showcase.js"></script>
+
+
+</body></html>
