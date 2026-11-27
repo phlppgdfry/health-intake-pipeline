@@ -10,6 +10,9 @@ on:
     - cron: "0 6 * * 1" # weekly: new NuGet advisories fail the build early
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   test:
     name: Build, format, test (PostgreSQL)
